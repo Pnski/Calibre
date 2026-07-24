@@ -17,7 +17,7 @@ jobs:
         run: |
           INIT="Plugins/METADATA-rndb-local/__init__.py"
           tuple_str="$(python - <<'PY'
-          print(".".join(rndblocal.version))
+          print(".".join(rndblocal().version))
           raise SystemExit
           PY
           )"
