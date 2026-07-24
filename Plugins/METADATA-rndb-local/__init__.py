@@ -14,7 +14,7 @@ class rndblocal(Source):
     name = "RNDB Local"
     description = "Downloading rndb dump for faster search on massive librarys."
     author = "Nyk"
-    version = (0, 1, 2)
+    version = (0, 1, 3)
     minimum_calibre_version = (9, 0, 0)
 
     #: Set this to True if your plugin returns HTML formatted comments

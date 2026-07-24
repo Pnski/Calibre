@@ -282,7 +282,7 @@ def get_mi_by_title_sorted(book_title:str, language:str, threshold:int):
             title,
         )
         for title, book_id in rows
-        if all(num in title for num in numbers)
+        if numbers == re.findall(r"[1-9]+", title)
     }, reverse=True)
 
     if score_result:
