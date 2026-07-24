@@ -17,18 +17,8 @@ jobs:
         run: |
           INIT="Plugins/METADATA-rndb-local/__init__.py"
           tuple_str="$(python - <<'PY'
-          import ast
-          import pathlib
-          p = pathlib.Path("Plugins/METADATA-rndb-local/__init__.py")
-          t = ast.parse(p.read_text(encoding="utf-8"))
-          for node in t.body:
-              if isinstance(node, ast.Assign):
-                  for target in node.targets:
-                      if getattr(target, "id", None) == "version":
-                          v = ast.literal_eval(node.value)  # expects (0,1,2)
-                          print(".".join(map(str, v)))
-                          raise SystemExit
-          raise SystemExit("version not found")
+          print(".".join(rndblocal.version)))
+          raise SystemExit
           PY
           )"
           echo "version=${tuple_str}" >> "$GITHUB_OUTPUT"
