@@ -18,15 +18,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: 1
-      - name: Generate commit.txt and build .mo files
-        run: |
-          echo "$GITHUB_SHA" > calibre-plugin/commit.txt
-      - name: Shorten GITHUB_SHA
-        run: echo "github_short_sha=${GITHUB_SHA::7}" >> $GITHUB_ENV
       - name: Upload plugin
         uses: actions/upload-artifact@v4
         with:
-          name: METADATA-rndb-local-${{ env.github_short_sha }}
+          name: METADATA-rndb-local-${{GITHUB_SHA::7}}
           path: |
             Plugins/METADATA-rndb-local/
             !Plugins/METADATA-rndb-local/test.py
