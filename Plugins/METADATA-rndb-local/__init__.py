@@ -7,7 +7,7 @@ import json
 from .localdb import check_local, find_rows, find_rows_fuzzy, get_book_by_id, get_mi_by_rndbid, get_mi_by_title_sorted
 from .parser import _parse_date
 
-san_pattern = re.compile(r'(?i)(?:vol|volume|book)\.?')
+san_pattern = re.compile(r'(?i)(?:vol\.|volume|book)')
 
 class rndblocal(Source):
 
