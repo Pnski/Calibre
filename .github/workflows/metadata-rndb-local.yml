@@ -1,0 +1,55 @@
+name: Build MetaData-rndb-local package
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from __init__.py
+        id: ver
+        shell: bash
+        run: |
+          INIT="Plugins/METADATA-rndb-local/__init__.py"
+          tuple_str="$(python - <<'PY'
+          import ast
+          import pathlib
+          p = pathlib.Path("Plugins/METADATA-rndb-local/__init__.py")
+          t = ast.parse(p.read_text(encoding="utf-8"))
+          for node in t.body:
+              if isinstance(node, ast.Assign):
+                  for target in node.targets:
+                      if getattr(target, "id", None) == "version":
+                          v = ast.literal_eval(node.value)  # expects (0,1,2)
+                          print(".".join(map(str, v)))
+                          raise SystemExit
+          raise SystemExit("version not found")
+          PY
+          )"
+          echo "version=${tuple_str}" >> "$GITHUB_OUTPUT"
+
+      - name: Create zip of .py files
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.ver.outputs.version }}"
+          OUT="MetaData-rndb-local-${VERSION}.zip"
+          SRC_DIR="Plugins/METADATA-rndb-local"
+
+          rm -f "$OUT"
+          cd "$SRC_DIR"
+
+          # Zip all .py files recursively
+          # (stores paths relative to the METADATA-rndb-local folder)
+          zip -r "../$OUT" . -i "*.py"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MetaData-rndb-local-${{ steps.ver.outputs.version }}
+          path: MetaData-rndb-local-*.zip
