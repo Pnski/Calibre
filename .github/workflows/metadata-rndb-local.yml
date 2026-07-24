@@ -1,45 +1,32 @@
-name: Build MetaData-rndb-local package
+name: Build Zip
 
 on:
   push:
-    branches: ["main", "master"]
+    branches:
+      - '**'
+    paths:
+      - 'Plugins/METADATA-rndb-local/**'
+      - 'calibre-plugin/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Get version from __init__.py
-        id: ver
-        shell: bash
-        run: |
-          INIT="Plugins/METADATA-rndb-local/__init__.py"
-          tuple_str="$(python - <<'PY'
-          print(".".join(rndblocal().version))
-          raise SystemExit
-          PY
-          )"
-          echo "version=${tuple_str}" >> "$GITHUB_OUTPUT"
-
-      - name: Create zip of .py files
-        shell: bash
-        run: |
-          set -euo pipefail
-          VERSION="${{ steps.ver.outputs.version }}"
-          OUT="MetaData-rndb-local-${VERSION}.zip"
-          SRC_DIR="Plugins/METADATA-rndb-local"
-
-          rm -f "$OUT"
-          cd "$SRC_DIR"
-
-          # Zip all .py files recursively
-          # (stores paths relative to the METADATA-rndb-local folder)
-          zip -r "../$OUT" . -i "*.py"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v3
         with:
-          name: MetaData-rndb-local-${{ steps.ver.outputs.version }}
-          path: MetaData-rndb-local-*.zip
+          submodules: true
+          fetch-depth: 1
+      - name: Generate commit.txt and build .mo files
+        run: |
+          echo "$GITHUB_SHA" > calibre-plugin/commit.txt
+      - name: Shorten GITHUB_SHA
+        run: echo "github_short_sha=${GITHUB_SHA::7}" >> $GITHUB_ENV
+      - name: Upload plugin
+        uses: actions/upload-artifact@v3
+        with:
+          name: METADATA-rndb-local-${{ env.github_short_sha }}
+          path: |
+            Plugins/METADATA-rndb-local/
+            !Plugins/METADATA-rndb-local/test.py
