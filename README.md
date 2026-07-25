@@ -9,6 +9,12 @@
 
 ## Changelog
 
+### 0.1.4
+
+- adding some options
+  - leading zeros
+  - user search pattern
+
 ### 0.1.3
 
 - changed number match to be more exact

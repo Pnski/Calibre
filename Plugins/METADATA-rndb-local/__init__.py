@@ -1,24 +1,32 @@
 from calibre.ebooks.metadata.sources.base import Option, Source
 
 import re
-import difflib
-import json
+from functools import partial
 
-from .localdb import check_local, find_rows, find_rows_fuzzy, get_book_by_id, get_mi_by_rndbid, get_mi_by_title_sorted
-from .parser import _parse_date
+from .localdb import (
+    check_local,
+    find_rows,
+    #find_rows_fuzzy,
+    #get_book_by_id,
+    get_mi_by_rndbid,
+    get_mi_by_title_sorted,
+)
+from .parser import (
+    _parse_date,
+    parse_book_number,
+)
 
-san_pattern = re.compile(r'(?i)(?:vol\.|volume|book)')
 
 class rndblocal(Source):
 
     name = "RNDB Local"
     description = "Downloading rndb dump for faster search on massive librarys."
     author = "Nyk"
-    version = (0, 1, 3)
+    version = (0, 1, 4)
     minimum_calibre_version = (9, 0, 0)
 
     #: Set this to True if your plugin returns HTML formatted comments
-    has_html_comments = True #we use <br> instead of \n
+    has_html_comments = True  # we use <br> instead of \n
 
     # Plugin capabilities
     capabilities = frozenset({"identify"})
@@ -26,16 +34,16 @@ class rndblocal(Source):
     # Metadata fields this plugin can provide
     touched_fields = frozenset(
         {
-            'title',
-            'authors',
-            'tags',
-            'pubdate',
-            'comments',
-            'publisher',
-            'identifiers',
-            'series',
-            'series_index',
-            'languages',
+            "title",
+            "authors",
+            "tags",
+            "pubdate",
+            "comments",
+            "publisher",
+            "identifiers",
+            "series",
+            "series_index",
+            "languages",
         }
     )
 
@@ -45,50 +53,54 @@ class rndblocal(Source):
             "language",
             "choices",
             "en",
-            _("Description language:"),
-            _("Preferred language for book descriptions"),
+            "Book language:",
+            "Use this option to set the preferences of the language, it might fallback to 'ja' if all english entries are None",
             choices={
-                "en": _("English"),
-                "ja": _("Japanese"),
+                "en": "English",
+                "ja": "Japanese",
             },
         ),
         Option(
-            "Sanitize",
-            "bool",
-            True,
-            _("Santize Vol.|Volume|Book?"),
-            _("THIS MIGHT FUCK UP YOUR TITLE"),            
+            "rx",
+            "string",
+            "vol\\.|volume|book",
+            "Santize Vol.|Volume|Book?",
+            "THIS MIGHT FUCK UP YOUR TITLE\nUse this in combination with leading zero's function e.g.'Volume [Number]'.",
         ),
         Option(
-            "san_string",
+            "rxr",
             "string",
             "Book",
-            _("String to sanitize with:"),
-            _("THIS MIGHT FUCK UP YOUR TITLE"),
+            "String to sanitize with:",
+            "THIS MIGHT FUCK UP YOUR TITLE\nSet this to blank aka '' to use the leading zeros without changing the prefix.",
+        ),
+        Option(
+            "rxn",
+            "number",
+            2,
+            "Leading zero's if number is smaller than?",
+            "Leading zero's if len(number) AFTER your searchstring e.g. 'Volume [NUMBER]' is lower than the amount e.g. set to 2 for 1 -> 01",
         ),
         Option(
             "threshold",
             "number",
             60,
-            _("Threshold in %"),
-            _("Threshold in % 0-100, default 60%"),
+            "Threshold in %",
+            "Threshold in % 0-100, default 60%",
         ),
-        
         Option(
             "days",
             "number",
             7,
-            _("Version -x Days:"),
-            _("TBD"),
+            "Version -x Days:",
+            "TBD",
         ),
         Option(
             "force",
             "bool",
             False,
-            _("Force title search"),
-            _(
-                "Ignore any identifier and search by title only. This is usefull if any historic entry might be wrong"
-            ),
+            "Force title search",
+            "Ignore any identifier and search by title only. This is usefull if any historic entry might be wrong"
         ),
     )
 
@@ -123,6 +135,8 @@ class rndblocal(Source):
         check_local(self.prefs.get("days", 10))
         log.info("Done checking local DB, starting search...")
 
+        rx = re.compile(rf'(?i)((?:{self.prefs.get("rx","")})\s*)(\d+)')
+
         # Check if we have a RanobeDB ID
         ranobedb_id = identifiers.get("ranobedb")
 
@@ -132,12 +146,11 @@ class rndblocal(Source):
             if abort.is_set():
                 return None
 
-            mi = get_mi_by_rndbid(ranobedb_id,self.prefs.get("language", "en"))
+            mi = get_mi_by_rndbid(ranobedb_id, self.prefs.get("language", "en"))
 
             if mi:
                 mi.source_relevance = 1
-                if self.prefs.get("Sanitize", True):
-                    mi.title = san_pattern.sub(self.prefs.get('san_string','Book'), mi.title)
+                mi.title = rx.sub(partial(parse_book_number,prefix=self.prefs.get("rxr",None),width=self.prefs.get("rxn",2)),mi.title)
                 result_queue.put(mi)
                 log.info("RanobeDB: Found book: %s" % mi.title)
             else:
@@ -148,21 +161,24 @@ class rndblocal(Source):
             if abort.is_set():
                 return None
 
-            book_data = get_mi_by_title_sorted(title,self.prefs.get("language", "en"),self.prefs.get("threshold", 60))
+            book_data = get_mi_by_title_sorted(
+                title, self.prefs.get("language", "en"), self.prefs.get("threshold", 60)
+            )
             for rank, book in enumerate(book_data):
-                log.info("score: %s for book: %s" % (book[0],book[2]))
-                mi = get_mi_by_rndbid(int(book[1]),self.prefs.get("language", "en"))
+                log.info("score: %s for book: %s" % (book[0], book[2]))
+                mi = get_mi_by_rndbid(int(book[1]), self.prefs.get("language", "en"))
                 if mi is None:
                     continue
                 mi.source_relevance = rank
-                mi.pubdate = _parse_date(find_rows("release","title",book[2])[0].get('release_date'), log)
-                if self.prefs.get("Sanitize", True):
-                    mi.title = san_pattern.sub(self.prefs.get('san_string','Book'), mi.title)
+                mi.pubdate = _parse_date(
+                    find_rows("release", "title", book[2])[0].get("release_date"), log
+                )
+                mi.title = rx.sub(partial(parse_book_number,prefix=self.prefs.get("rxr",None),width=self.prefs.get("rxn",2)),mi.title)
                 result_queue.put(mi)
 
             if result_queue.qsize() == 0:
                 log.warning(
-                    "RanobeDB: Book not found with title: %s, or below threshold %s."
+                    "RanobeDB: Book not found with title: %s, or below threshold %s\%."
                     % (title, self.prefs.get("threshold"))
                 )
         return None
