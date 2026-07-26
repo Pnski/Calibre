@@ -6,8 +6,8 @@ from functools import partial
 from .localdb import (
     check_local,
     find_rows,
-    #find_rows_fuzzy,
-    #get_book_by_id,
+    # find_rows_fuzzy,
+    # get_book_by_id,
     get_mi_by_rndbid,
     get_mi_by_title_sorted,
 )
@@ -22,7 +22,7 @@ class rndblocal(Source):
     name = "RNDB Local"
     description = "Downloading rndb dump for faster search on massive librarys."
     author = "Nyk"
-    version = (0, 1, 4)
+    version = (0, 1, 5)
     minimum_calibre_version = (9, 0, 0)
 
     #: Set this to True if your plugin returns HTML formatted comments
@@ -100,7 +100,7 @@ class rndblocal(Source):
             "bool",
             False,
             "Force title search",
-            "Ignore any identifier and search by title only. This is usefull if any historic entry might be wrong"
+            "Ignore any identifier and search by title only. This is usefull if any historic entry might be wrong",
         ),
     )
 
@@ -150,7 +150,14 @@ class rndblocal(Source):
 
             if mi:
                 mi.source_relevance = 1
-                mi.title = rx.sub(partial(parse_book_number,prefix=self.prefs.get("rxr",None),width=self.prefs.get("rxn",2)),mi.title)
+                mi.title = rx.sub(
+                    partial(
+                        parse_book_number,
+                        prefix=self.prefs.get("rxr", None),
+                        width=self.prefs.get("rxn", 2),
+                    ),
+                    mi.title,
+                )
                 result_queue.put(mi)
                 log.info("RanobeDB: Found book: %s" % mi.title)
             else:
@@ -170,16 +177,22 @@ class rndblocal(Source):
                 if mi is None:
                     continue
                 mi.source_relevance = rank
-                mi.pubdate = _parse_date(
-                    find_rows("release", "title", book[2])[0].get("release_date"), log
+                #mi.pubdate = _parse_date(
+                #    find_rows("release", "title", book[2])[0].get("release_date"), log
+                #)
+                mi.title = rx.sub(
+                    partial(
+                        parse_book_number,
+                        prefix=self.prefs.get("rxr", None),
+                        width=self.prefs.get("rxn", 2),
+                    ),
+                    mi.title,
                 )
-                mi.title = rx.sub(partial(parse_book_number,prefix=self.prefs.get("rxr",None),width=self.prefs.get("rxn",2)),mi.title)
                 result_queue.put(mi)
 
             if result_queue.qsize() == 0:
                 log.warning(
-                    "RanobeDB: Book not found with title: %s, or below threshold %s\%."
-                    % (title, self.prefs.get("threshold"))
+                    rf"RanobeDB: Book not found with title: {title}, or below threshold {self.prefs.get("threshold")}%."
                 )
         return None
 

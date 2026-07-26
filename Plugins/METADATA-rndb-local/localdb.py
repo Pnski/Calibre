@@ -159,12 +159,15 @@ def get_mi_by_rndbid(book_id:int, language:str):
     with sqlite3.connect(db_file) as sql:
         title = sql.execute("""
             SELECT
-                title
+                COALESCE(romaji, title)
             FROM book_title
             WHERE 
                 book_id = ?
-                AND lang = ?
-            """,(str(book_id),language)).fetchone()[0]
+                AND lang IN (?, 'ja')
+            ORDER BY
+                CASE lang WHEN ? THEN 0 ELSE 1 END
+            LIMIT 1
+            """,(str(book_id),language,language)).fetchone()[0]
         authors =  [f"{n.split(' ', 1)[1]} {n.split(' ', 1)[0]}" if ' ' in n else n for n, in 
             sql.execute("""
                 SELECT
@@ -215,9 +218,12 @@ def get_mi_by_rndbid(book_id:int, language:str):
             WHERE
                 rb.book_id = ?
                 AND rl.format = 'digital'
-                AND rl.lang = ?
+                AND lang IN (?, 'ja')
                 AND rp.publisher_type = 'publisher'
-            """,(str(book_id),language,)).fetchone()
+            ORDER BY
+                CASE lang WHEN ? THEN 0 ELSE 1 END
+            LIMIT 1
+            """,(str(book_id),language,language,)).fetchone()
         mi.series, mi.series_index = sql.execute("""
             SELECT
                 st.title,
@@ -242,21 +248,22 @@ def get_mi_by_rndbid(book_id:int, language:str):
             """,(str(book_id),)).fetchall()]
 
     mi.identifiers["ranobedb"] = str(book_id)
-    for key, value in zip(
-        ("isbn13", "website", "amazon", "bookwalker", "rakuten"),
-        identifiers,
-    ):
-        if value is not None:
-            mi.identifiers[key] = value
-    mi.pubdate = _parse_date(identifiers[5])
-    mi.publisher = identifiers[6]
-
+    try:
+        for key, value in zip(
+            ("isbn13", "website", "amazon", "bookwalker", "rakuten"),
+            identifiers,
+        ):
+            if value is not None:
+                mi.identifiers[key] = value
+        mi.pubdate = _parse_date(identifiers[5])
+        mi.publisher = identifiers[6]
+    except Exception as e:
+        print("Error",e)
     return mi
 
 def get_mi_by_title_sorted(book_title:str, language:str, threshold:int):
     #split into parts for multi search
     parts = re.findall(r"[A-Za-z]+", book_title)
-    numbers = re.findall(r"[1-9]+", book_title)
     if not parts:
         return None #Error in title?
 
@@ -275,14 +282,23 @@ def get_mi_by_title_sorted(book_title:str, language:str, threshold:int):
                     r.title LIKE ?
                     AND r.lang = ?
             """, (f"%{part}%",language,)).fetchall())
+            rows.update(sql.execute("""
+                SELECT DISTINCT
+                    title,
+                    book_id
+                FROM book_title
+                WHERE 
+                    title LIKE ?
+                    AND lang = ?
+            """, (f"%{part}%",language,)).fetchall())
     score_result = sorted({
         (
-            difflib.SequenceMatcher(None, book_title, title).ratio(),
+            difflib.SequenceMatcher(None, book_title.lower(), title.lower()).ratio(),
             book_id,
             title,
         )
         for title, book_id in rows
-        if numbers == re.findall(r"[1-9]+", title)
+        if [int(x) for x in re.findall(r"\d+", book_title)] == [int(x) for x in re.findall(r"\d+", title)]
     }, reverse=True)
 
     if score_result:

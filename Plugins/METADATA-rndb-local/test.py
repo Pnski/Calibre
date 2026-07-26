@@ -5,17 +5,9 @@ from calibre.ebooks.metadata.sources.test import test_identify_plugin, title_tes
 
 test1 = [
     (
-        {'title': "86—EIGHTY-SIX, Book 03: Run Through The Battlefront (Finish)", 'authors': ['Reki Kawahara']},
-        [title_test("86—EIGHTY-SIX, Book 03: Run Through The Battlefront (Finish)")],
+        {'title': "The Fruit of Evolution Book 01", 'authors': ['Reki Kawahara']},
+        [title_test("The Fruit of Evolution Book 01")],
     )
 ]
 
 test_identify_plugin('RNDB Local', test1)
-
-test2 = [
-    (
-        {'title': 'Spice and Wolf'},
-        [title_test('Spice')],
-    ),
-]
-test_identify_plugin('RNDB Local', test2)

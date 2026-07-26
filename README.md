@@ -9,6 +9,12 @@
 
 ## Changelog
 
+### 0.1.5
+
+- fallback method for edge cases in which ranobedb doesn't provide an english name in a series
+- fallback for publisher and pubdate crashing
+- better title number comparer
+
 ### 0.1.4
 
 - adding some options
