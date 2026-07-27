@@ -34,16 +34,12 @@ def check_local_date(days=0):
     except OSError:
         return False
 
+
 def create_db():
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
-    cursor.execute("PRAGMA journal_mode=OFF")
-    cursor.execute("PRAGMA synchronous=OFF")
-    cursor.execute("PRAGMA temp_store=MEMORY")
-    cursor.execute("PRAGMA cache_size=-100000")   # ~100 MB cache
-    cursor.execute("PRAGMA locking_mode=EXCLUSIVE")
-    BATCH_SIZE = 20000
+    BATCH_SIZE = 5000
 
     with gzip.open(local_file, "rt", encoding="utf-8") as f:
 
@@ -56,19 +52,20 @@ def create_db():
 
             if line.startswith("COPY "):
                 match = re.match(
-                    r'COPY public\.(?:"([^"]+)"|(\w+)) \((.*?)\) FROM stdin;',
-                    line
+                    r'COPY public\.(?:"([^"]+)"|(\w+)) \((.*?)\) FROM stdin;', line
                 )
 
                 if match:
                     table = match.group(1) or match.group(2)
                     columns = [c.strip().strip('"') for c in match.group(3).split(",")]
 
-                    cursor.execute(f'''
+                    cursor.execute(
+                        f"""
                         CREATE TABLE IF NOT EXISTS "{table}" (
                             {",".join(f'"{c}" TEXT' for c in columns)}
                         )
-                    ''')
+                    """
+                    )
 
                     placeholders = ",".join("?" for _ in columns)
                     batch.clear()
@@ -82,8 +79,7 @@ def create_db():
 
                 if batch:
                     cursor.executemany(
-                        f'INSERT INTO "{table}" VALUES ({placeholders})',
-                        batch
+                        f'INSERT INTO "{table}" VALUES ({placeholders})', batch
                     )
                     batch.clear()
 
@@ -94,104 +90,18 @@ def create_db():
                 placeholders = None
                 continue
 
-            batch.append([
-                None if x == r"\N" else x
-                for x in line.rstrip("\n").split("\t")
-            ])
+            batch.append(
+                [None if x == r"\N" else x for x in line.rstrip("\n").split("\t")]
+            )
 
             if len(batch) >= BATCH_SIZE:
                 cursor.executemany(
-                    f'INSERT INTO "{table}" VALUES ({placeholders})',
-                    batch
+                    f'INSERT INTO "{table}" VALUES ({placeholders})', batch
                 )
                 batch.clear()
 
     conn.commit()
     conn.close()
-
-def create_db_old():
-    conn = sqlite3.connect(db_file)
-    cursor = conn.cursor()
-
-    columns = None
-
-    with gzip.open(local_file, "rt", encoding="utf-8") as f:
-
-        inside_copy = False
-        table = None
-        columns = None
-        placeholders = None
-
-        for line in f:
-
-            # Detect COPY table blocks
-            if line.startswith("COPY "):
-
-                match = re.match(
-                    r'COPY public\.(?:"([^"]+)"|(\w+)) \((.*?)\) FROM stdin;', line
-                )
-
-                if match:
-                    table = match.group(1) or match.group(2)
-
-                    columns = [c.strip().strip('"') for c in match.group(3).split(",")]
-
-                    # Create SQLite table automatically
-                    cursor.execute(
-                        f"""
-                        CREATE TABLE IF NOT EXISTS "{table}" (
-                            {",".join(
-                                f'"{c}" TEXT'
-                                for c in columns
-                            )}
-                        )
-                        """
-                    )
-
-                    placeholders = ",".join("?" for _ in columns)
-
-                    inside_copy = True
-                    continue
-
-            if inside_copy:
-
-                # End of COPY section
-                if line.strip() == r"\.":
-                    conn.commit()
-
-                    inside_copy = False
-                    table = None
-                    columns = None
-                    continue
-
-                values = [
-                    None if x == r"\N" else x for x in line.rstrip("\n").split("\t")
-                ]
-
-                cursor.execute(
-                    f"""
-                    INSERT INTO "{table}"
-                    VALUES ({placeholders})
-                    """,
-                    values,
-                )
-    conn.commit()
-    conn.close()
-
-
-def find_rows(table, column, value, limit=20):
-    conn = sqlite3.connect(db_file)
-    conn.row_factory = sqlite3.Row  # enables dict-like row access
-    cur = conn.cursor()
-
-    cur.execute(
-        f'SELECT * FROM "{table}" WHERE "{column}" = ? LIMIT ?',
-        (value, limit),
-    )
-    rows = cur.fetchall()
-    conn.close()
-
-    return [dict(row) for row in rows]
 
 
 def find_rows_fuzzy(table, column, value, limit=20):
@@ -207,6 +117,75 @@ def find_rows_fuzzy(table, column, value, limit=20):
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+def get_book_series_release_old(series, calibre_rndb_ids):
+    with sqlite3.connect(db_file) as sql:
+        p_series = ",".join("?" for _ in series)
+        p_ids = ",".join("?" for _ in calibre_rndb_ids)
+
+        query = f"""
+            SELECT
+                st.title,
+                bt.title,
+                json_extract(b.c_release_dates, '$.en') AS en_release_date
+            FROM book b
+            JOIN book_title bt
+                ON b.id = bt.book_id
+            JOIN series_book sb
+                ON sb.book_id = b.id
+            JOIN series_title st
+                ON sb.series_id = st.series_id
+            WHERE
+                st.title IN ({p_series})
+                AND b.id NOT IN ({p_ids})
+                AND bt.lang = 'en'
+                AND st.lang = 'en'
+                AND json_extract(b.c_release_dates, '$.en') <= CAST(strftime('%Y%m%d', 'now') AS INTEGER)
+        """
+
+        params = list(series) + list(calibre_rndb_ids)
+
+        title = sql.execute(query, params).fetchall()
+    return title
+
+def get_book_series_release(series, calibre_rndb_ids):
+    if not series:
+        return []
+
+    with sqlite3.connect(db_file) as sql:
+        p_series = ",".join("?" for _ in series)
+
+        # If no ids to exclude, omit that predicate
+        if calibre_rndb_ids:
+            p_ids = ",".join("?" for _ in calibre_rndb_ids)
+            exclude_clause = f"AND b.id NOT IN ({p_ids})"
+            params = list(series) + list(calibre_rndb_ids)
+        else:
+            exclude_clause = ""
+            params = list(series)
+
+        query = f"""
+            SELECT
+                st.title,
+                bt.title,
+                json_extract(b.c_release_dates, '$.en') AS en_release_date
+            FROM book b
+            JOIN book_title bt
+                ON b.id = bt.book_id
+            JOIN series_book sb
+                ON sb.book_id = b.id
+            JOIN series_title st
+                ON sb.series_id = st.series_id
+            WHERE
+                st.title IN ({p_series})
+                {exclude_clause}
+                AND bt.lang = 'en'
+                AND st.lang = 'en'
+                AND json_extract(b.c_release_dates, '$.en') <= CAST(strftime('%Y%m%d', 'now') AS INTEGER)
+        """
+
+        return sql.execute(query, params).fetchall()
 
 
 def get_book_by_id(book_id, limit=5):
@@ -304,7 +283,7 @@ def get_mi_by_rndbid(book_id: int, language: str):
             .fetchone()[0]
             .replace("\\n", "<br>")
         )
-        #SUBSTR(rl.amazon, INSTR(rl.amazon, '/dp/') + 4),
+        # SUBSTR(rl.amazon, INSTR(rl.amazon, '/dp/') + 4),
         identifiers = sql.execute(
             """
             SELECT

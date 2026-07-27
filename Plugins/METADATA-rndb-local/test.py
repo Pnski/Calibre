@@ -5,8 +5,8 @@ from calibre.ebooks.metadata.sources.test import test_identify_plugin, title_tes
 
 test1 = [
     (
-        {'title': "The Fruit of Evolution Book 01", 'authors': ['Reki Kawahara']},
-        [title_test("The Fruit of Evolution Book 01")],
+        {'title': "UNKNOWN", 'authors': ['Reki Kawahara']},
+        [title_test("UNKNOWN")],
     )
 ]
 

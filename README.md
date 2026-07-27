@@ -9,6 +9,11 @@
 
 ## Changelog
 
+### 0.1.6
+
+- reform amazon URL to amazon-id
+- slight improvement on sql db creation
+
 ### 0.1.5
 
 - fallback method for edge cases in which ranobedb doesn't provide an english name in a series
@@ -35,3 +40,18 @@
 ### 0.1.1
 
 - working plugin without obvious mistakes
+
+# Calibre UI-Plugin
+
+## Features
+
+- Checks all local Series with the rndb-db-dump
+- filters by identifiers:ranobedb exist in CALIBRE
+- gives a list thats sortable and clickable
+  - on click calibre-search bar = {serie-name}
+  
+## Changelog
+
+### 0.1.0
+
+- Initial release
