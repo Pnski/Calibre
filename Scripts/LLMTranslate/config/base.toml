@@ -1,0 +1,29 @@
+[general]
+cache_dir = "cache"
+models_dir = "models"
+max_content = 1500 #2k = 5,8GB VRAM
+
+[p1]
+#model = "Qwen/Qwen2.5-3B-Instruct" #qwn2.5 under 3B instruct is putting nonsense
+#model = "Qwen/Qwen3.5-2B"
+model = "Qwen/Qwen3-1.7B"
+max_new_tokens = 2000
+temperature = 0.3
+top_p = 1
+top_k = 0
+do_sample = true
+repetition_penalty = 1.5
+presence_penalty=0.5
+file_extension = ".json"
+
+[p2]
+model = "facebook/nllb-200-distilled-600M"
+source_language = "jpn_Jpan"
+target_language = "eng_Latn"
+beam_size = 5
+
+[p3]
+enabled = true
+model = "Qwen/Qwen2.5-3B-Instruct"
+max_new_tokens = 4096
+temperature = 0.2

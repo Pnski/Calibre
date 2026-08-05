@@ -1,28 +1,13 @@
 from calibre.ebooks.metadata.sources.base import Option, Source
 
 import re
-from functools import partial
-
-from .localdb import (
-    check_local,
-    find_rows,
-    # find_rows_fuzzy,
-    # get_book_by_id,
-    get_mi_by_rndbid,
-    get_mi_by_title_sorted,
-)
-from .parser import (
-    _parse_date,
-    parse_book_number,
-)
-
 
 class rndblocal(Source):
 
     name = "RNDB Local"
     description = "Downloading rndb dump for faster search on massive librarys."
     author = "Nyk"
-    version = (0, 1, 7)
+    version = (0, 0, 1)
     minimum_calibre_version = (9, 0, 0)
 
     #: Set this to True if your plugin returns HTML formatted comments
@@ -131,69 +116,8 @@ class rndblocal(Source):
             % (title, authors, identifiers)
         )
 
-        log.info("Checking local DB age max=%s" % (self.prefs.get("days", 10)))
-        check_local(self.prefs.get("days", 10))
-        log.info("Done checking local DB, starting search...")
-
         rx = re.compile(rf'(?i)((?:{self.prefs.get("rx","")})\s*)(\d+)')
 
-        # Check if we have a RanobeDB ID
-        ranobedb_id = identifiers.get("ranobedb")
-
-        if ranobedb_id and not self.prefs.get("force"):
-            log.info("RanobeDB: Looking up book by ID: %s" % ranobedb_id)
-
-            if abort.is_set():
-                return None
-
-            mi = get_mi_by_rndbid(ranobedb_id, self.prefs.get("language", "en"))
-
-            if mi:
-                mi.source_relevance = 1
-                mi.title = rx.sub(
-                    partial(
-                        parse_book_number,
-                        prefix=self.prefs.get("rxr", None),
-                        width=self.prefs.get("rxn", 2),
-                    ),
-                    mi.title,
-                )
-                result_queue.put(mi)
-                log.info("RanobeDB: Found book: %s" % mi.title)
-            else:
-                log.warning("RanobeDB: Book not found with ID: %s" % ranobedb_id)
-        else:
-            log.info("RanobeDB: Looking up book by title: %s" % title)
-
-            if abort.is_set():
-                return None
-
-            book_data = get_mi_by_title_sorted(
-                title, self.prefs.get("language", "en"), self.prefs.get("threshold", 60)
-            )
-            for rank, book in enumerate(book_data):
-                log.info("score: %s for book: %s" % (book[0], book[2]))
-                mi = get_mi_by_rndbid(int(book[1]), self.prefs.get("language", "en"))
-                if mi is None:
-                    continue
-                mi.source_relevance = rank
-                #mi.pubdate = _parse_date(
-                #    find_rows("release", "title", book[2])[0].get("release_date"), log
-                #)
-                mi.title = rx.sub(
-                    partial(
-                        parse_book_number,
-                        prefix=self.prefs.get("rxr", None),
-                        width=self.prefs.get("rxn", 2),
-                    ),
-                    mi.title,
-                )
-                result_queue.put(mi)
-
-            if result_queue.qsize() == 0:
-                log.warning(
-                    rf"RanobeDB: Book not found with title: {title}, or below threshold {self.prefs.get("threshold")}%."
-                )
         return None
 
     # has to be reimplemented for the source relevance to work, otherwise it uses the default that ignores the relevance!!

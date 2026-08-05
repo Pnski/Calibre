@@ -397,6 +397,9 @@ def get_mi_by_title_sorted(book_title: str, language: str, threshold: int):
         rows = set()
 
         for part in parts:
+            #skipping rly small parts
+            if len(part) <= 3 or part in ['Volume', 'Vol.', 'Book']:
+                continue
             rows.update(
                 sql.execute(
                     """

@@ -1,0 +1,130 @@
+[p1.scene_planner]
+system = """
+Your task is to extract persistent narrative information that will help later translation stages maintain consistency across the chapter.
+Do not summarize the chapter. Instead, record reusable facts.
+DO NOT translate text.
+
+The provided text may begin or end in the middle of a scene.
+Do not assume a scene starts because this prompt begins.
+Do not assume a scene ends because this prompt ends.
+
+Output Format:
+    Output one JSON object only.
+    Required top-level keys:
+        scenes: [],
+        pov_tracking: [],
+        character_tracking: [],
+        translation_risks: [],
+        chapter_metadata: {}
+
+scenes:
+    You analyse the overall Scene for that you are getting key information:
+    - id (integer) for the current scene, the id is a sequential number
+    - start_paragraph (integer or None), if you detect a scenechange fill this number
+    - end_paragraph (integer or None), if you detect a scenechange fill this number
+    - eps_band (string: HOT | WARM | NEUTRAL | COOL | COLD ) — the scene's emotional proximity/tension band.
+        * HOT = anger, panic, high-tension confrontation, active flustered tsundere, comedy climax
+        * WARM = tenderness, intimacy, growing connection, vulnerability
+        * NEUTRAL = standard narrative, exposition, casual conversation
+        * COOL = detachment, observation, analytical, formal distance
+        * COLD = trauma, dissociation, comedic rock-bottom despair, complete disconnect
+        Choose the strongest emotional state experienced by the POV character during the scene.
+    Create a new scene only when one of the following changes:
+        - location
+        - significant time jump
+        - POV
+        - primary narrative objective
+        - major emotional shift
+
+pov_tracking:
+    Determine which character owns the narrative perspective:
+        - character (string)
+            - ALWAYS use the EXACT canonical name from the CHARACTER NAME
+            - under no circumstances should you use generic labels like Narrator or Protagonist
+            - never append family/last names
+        - certainty (string): use low | medium | high
+        - start_line (integer)
+        - end_line (integer or null)
+        - description (string)
+        - ALWAYS include pov_tracking even for single-narrator chapters
+        - For single-narrator chapters, emit one entry covering the whole chapter
+        - For multi-narrator chapters, emit one entry per narrator segment in reading order
+        - Infer POV from narrative ownership and surrounding context first: whose internal thoughts, perceptions, interpretations, blind spots, and emotional filtering control the prose
+        - Use JP pronouns only as a weak supporting clue, never the sole criterion
+        - Stronger POV evidence includes interior monologue, knowledge asymmetry, private reactions, remembered motives, and narration that stays inside one character's sensory/cognitive frame across nearby paragraphs
+        - If the chapter opens before the POV character is explicitly named, still infer the most likely POV from surrounding context and use that canonical name
+        - In description, use neutral labels such as POV character for chapter opening or POV shifts after confrontation ; do not label someone the protagonist unless the source explicitly establishes that role
+
+character_tracking
+    You analyse the given text for characters that are mentioned, try to identify key values for these characters:
+        - name, emotional_state, sentence_bias, relationship_dynamic (string)
+        - victory_patterns, denial_patterns (array of strings)
+        Safety style constraints (MANDATORY):
+        - Describe scenes in neutral narrative terms.
+        - If intimacy is relevant, describe emotional tension and proximity.
+    Include only named characters or recurring unnamed characters that influence the narrative.
+
+translation_risks
+    You analyse the overall phrasing of the given paragraphs and check if there are cultural phrases that are difficult to translate, especially if the context might be missing:
+        - culture_bleed_risk (string: high | medium | low | omit if none)
+        - culture_bleed_category (string: one of farewell_greeting_formula | school_hierarchy_vocab | gendered_speech_register | otaku_attribute_vocab | emotional_beat_substitution | omit if none)
+        - culture_bleed_source_phrase (string: the exact JP phrase triggering the flag, omit if none)
+        - culture_bleed_warning (string: concise EN warning for the Stage 2 translator, omit if none)
+        - culture_bleed_forbidden (array of strings: EN phrasings the translator must NOT use, omit if none)
+        Culture bleed annotation rules:
+        Flag scenes that contain specific phrases that are commonly mistranslated, like ideoms.
+        Categories and examples:
+            farewell_greeting_formula: よろしくね (mutual welcome, NOT 'welcome home'), お邪魔します (polite entry greeting, NOT 'sorry to intrude'), おかえり/ただいま (homecoming pair),
+            お疲れ様 (effort acknowledgment, NOT generic 'thank you')
+            school_hierarchy_vocab: 一軍/二軍 (first/second squad social rank, NOT 'A-list'), 陽キャ (outgoing type, NOT 'popular kid'), 陰キャ (introverted type, NOT 'nerd/loser'), 一軍女子 (top-tier social rank, NOT 'queen bee' or 'A-list girl')
+            gendered_speech_register: gruff older male patterns (だかなんだか知らんが, 〜せんぞ, 知らんが) where Anglo slang injection (rhyming dismissals, Yiddish-origin expressions) would be wrong
+            otaku_attribute_vocab: 属性 in social context (character attribute tag, NOT 'label'/'backstory'), キャラ, ポジション used as social role descriptors
+            emotional_beat_substitution: any high-stakes closing exchange where the scene feel strongly pulls toward a different phrase than the source (e.g. よろしく in a homecoming-feeling scene)
+        Only flag when the risk is genuine. Omit all culture_bleed_* keys for clean scenes.
+        culture_bleed_warning must be a single concise sentence for the translator, not an essay.
+
+chapter_metadata
+    You analyse the paragraphs for major changes and you try to get them in order.
+    - Location (array of strings)
+        - if mentioned take the location from the text in the order its mentioned so we get a list of places as the story progresses
+        Record locations in chronological order as the narrative progresses.
+        Do not deduplicate.
+        Repeat locations if the story returns there.
+
+
+Do not include explanatory text.
+Do not include markdown.
+Return valid JSON only.
+A new paragraph starts with every <br>.
+"""
+
+user = """
+This is the first chunk of text to analyse:
+"""
+
+[p1.scene_planner_continue]
+
+user = """
+You are getting the previous analysis as JSON and the next chunk, it is the same chapter so you start where the previous chunk ended.
+Modify or add the new input to the data.
+DO NOT REMOVE INFORMATION.
+Scene IDs are sequential within the chapter.
+If this chunk continues an existing scene, reuse its ID rather than creating a new scene.
+"""
+
+[p2_translate]
+system = """
+You are a professional literary translator.
+"""
+
+user = """
+Book summary:
+
+{summary}
+
+Translate the following chapter.
+
+Chapter:
+
+{chapter}
+"""

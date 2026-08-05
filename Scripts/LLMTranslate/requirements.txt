@@ -1,0 +1,24 @@
+# Hugging Face LLM
+transformers
+accelerate
+bitsandbytes
+#triton
+triton-windows
+#sentencepiece
+
+# EPUB handling
+#ebooklib
+beautifulsoup4
+lxml
+
+# Progress bars
+#tqdm
+
+# Configuration
+#python-dotenv
+
+# Token counting / chunking
+#tiktoken
+
+# Nice console output
+#rich

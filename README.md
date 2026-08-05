@@ -9,6 +9,10 @@
 
 ## Changelog
 
+### 0.1.7
+
+- small performance improvements
+
 ### 0.1.6
 
 - reform amazon URL to amazon-id
