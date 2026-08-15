@@ -50,9 +50,9 @@ def load_model(phase):
 
     model = AutoModelForCausalLM.from_pretrained(
         base[phase]["model"],  # MODEL_NAME
-        quantization_config=bnb_config,
+        #quantization_config=bnb_config,
         device_map="auto",
-        dtype=torch.float16,
+        dtype="auto",
         #| dtype    | VRAM |
         #| -------- | ---: |
         #| float32  | 100% |
@@ -78,7 +78,7 @@ def execute_model(
         prompt,
         tokenize=False,
         add_generation_prompt=True,
-        enable_thinking=False,
+        enable_thinking=True,
     )
 
     #logger.debug(formatted)

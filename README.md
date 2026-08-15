@@ -1,4 +1,13 @@
-# Calibre Metadata-Plugin
+# Calibre Metadata-Plugin : LNRelease
+
+- crossinfworld
+- edelweiss (onepeacebooks)
+- hanashi media
+- j-novel-club
+- viz
+- yenpress
+
+# Calibre Metadata-Plugin : RNDB Local
 
 ## Features
 
@@ -45,7 +54,18 @@
 
 - working plugin without obvious mistakes
 
-# Calibre UI-Plugin
+# Calibre UI-Plugin : Better Export
+
+- define EXPORT parameters, so i dont have to transform the grounding epub (and keep a ton of backups or whatever)
+- shrink the title image (crucial for tolino webcloud)
+- autorotate images
+- shrink images (my tolino has like 800x1200 px, dont need more)
+- clean metadata (like leave only the bare minimum or whatever)
+- delete copyright pages and recommendations (dont need ads in my books)
+- ? auto proofread (stuff like THe -> The)
+
+
+# Calibre UI-Plugin : Check RNDB Series
 
 ## Features
 

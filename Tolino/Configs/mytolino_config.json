@@ -1,0 +1,177 @@
+{
+  "VERSION": {
+    "OFFICIAL": "5.15.2",
+    "CI_PIPELINE_ID": "250302",
+    "CI_COMMIT_REF_NAME": "v5.15.2",
+    "CI_COMMIT_SHA": "4538b70b4889ea29b85fe385a1f55f5eb7c6b7f9",
+    "PHRASE": ""
+  },
+  "APP": {
+    "DATABASE_NAME": "tolino-settings",
+    "OBJECT_STORE": "values",
+    "VERSION": 3,
+    "FEATURES": {
+      "FAMILY_SHARING": true
+    }
+  },
+  "DATABASE": {
+    "DATABASE_NAME": "tolino-reseller",
+    "OBJECT_STORE": "values",
+    "VERSION": 3
+  },
+  "PUBSTORE": {
+    "DATABASE_NAME": "tolino-publications",
+    "OBJECT_STORE": "values",
+    "VERSION": 3
+  },
+  "IMAGESTORE": {
+    "DATABASE_NAME": "tolino-images",
+    "OBJECT_STORE": "values",
+    "VERSION": 3
+  },
+  "RESELLERSTORE": {
+    "DATABASE_NAME": "tolino-reseller",
+    "OBJECT_STORE": "values",
+    "VERSION": 3
+  },
+  "USERSTORE": {
+    "DATABASE_NAME": "tolino-user",
+    "OBJECT_STORE": "values",
+    "VERSION": 3
+  },
+  "BOOKSHELFSTORE": {
+    "DATABASE_NAME": "tolino-bookshelf",
+    "OBJECT_STORE": "values",
+    "VERSION": 4
+  },
+  "SYNCSTORE": {
+    "DATABASE_NAME": "tolino-syncdata",
+    "OBJECT_STORE": "values",
+    "VERSION": 1
+  },
+  "SKOOBESTORE": {
+    "DATABASE_NAME": "tolino-skoobe",
+    "OBJECT_STORE": "values",
+    "VERSION": 1
+  },
+  "RXSTORE": {
+    "DATABASE_NAME": "tolino-rx",
+    "OBJECT_STORE": "values",
+    "VERSION": 1
+  },
+  "RESELLER": {
+    "COUNTRY": "/reseller/countries",
+    "SELECTION": "/reseller/selection",
+    "CONFIG": "/v2/resellerconfig",
+    "GROUP": 27,
+    "LANGUAGES_BOSH_MAP": {
+      "GB": "EN",
+      "US": "EN",
+      "BE": "NL"
+    }
+  },
+  "NET": {
+    "BOSH": "https://bosh.pageplace.de/bosh/rest",
+    "FAMILY": "https://family.prodref.pageplace.de",
+    "INVENTORY": "https://inventory.prodref.pageplace.de",
+    "OAUTHSIM": false,
+    "URL_OAUTH_REDIRECT_OVERRIDE": "",
+    "CLIENT_TYPE": "TOLINO_WEBREADER",
+    "EMBEDDED_CLIENT_TYPES": {
+      "1": "TOLINO_THALIA_INTEGRATION",
+      "3": "TOLINO_THALIA_INTEGRATION"
+    },
+    "COMPONENT_TIMEOUT": 5000,
+    "DEMO_HARDWARE": "DEMO:HARDWARE:ID"
+  },
+  "ERROR": {
+    "ABORT": "ABORT",
+    "UNSUPPORTED_MEDIA": "UNSUPPORTED_MEDIA",
+    "LOCALSTORAGE_FAIL": "LOCALSTORAGE_FAIL",
+    "MISSING_ID": "MISSING_ID",
+    "DEVICE_LIMIT": "DEVICE_LIMIT",
+    "NETWORK_BOSH_FAIL": "NETWORK_BOSH_FAIL",
+    "NETWORK_OFFLINE": "NETWORK_OFFLINE",
+    "NETWORK_TIMEOUT": "NETWORK_TIMEOUT",
+    "NETWORK_FAIL": "NETWORK_FAIL",
+    "NETWORK_AUTOLOGIN_PROGRESS": "NETWORK_AUTOLOGIN_PROGRESS",
+    "BROWSER_PRIVATE_MODE": "BROWSER_PRIVATE_MODE",
+    "BROWSER_STORAGE_FAIL": "BROWSER_STORAGE_FAIL",
+    "APP_SYNC_ERROR": "APP_SYNC_ERROR",
+    "APP_SYNC_BOOKMARK_CONFLICT": "APP_SYNC_BOOKMARK_CONFLICT",
+    "APP_CONTENT_DELIVERABLE_FAIL": "APP_CONTENT_DELIVERABLE_FAIL",
+    "APP_CONTENT_PARSER_FAIL": "APP_CONTENT_PARSER_FAIL",
+    "APP_GENERAL_ERROR": "APP_GENERAL_ERROR",
+    "APP_INVALID_CONFIG": "APP_INVALID_CONFIG",
+    "APP_INVALID_CRYPTO": "APP_INVALID_CRYPTO",
+    "APP_INVALID_USER": "APP_INVALID_USER",
+    "APP_INVALID_TOKEN": "APP_INVALID_TOKEN",
+    "APP_NO_STORED_TOKEN": "APP_NO_STORED_TOKEN",
+    "APP_NO_STORED_USER": "APP_NO_STORED_USER",
+    "APP_NO_USER": "APP_NO_USER",
+    "APP_NO_CONFIG": "APP_NO_CONFIG",
+    "APP_NO_COUNTRY": "APP_NO_COUNTRY",
+    "APP_NO_ENTITLEMENTS": "APP_NO_ENTITLEMENTS",
+    "APP_NO_ENTITLEMENT": "APP_NO_ENTITLEMENT",
+    "APP_NO_ENTITLEMENT_ID": "APP_NO_ENTITLEMENT_ID",
+    "APP_NO_RESELLER": "APP_NO_RESELLER",
+    "RENDER_IN_PROGRESS": "Render already in progress"
+  },
+  "MIME_TYPES": {
+    "epub": "application/epub+zip",
+    "pdf": "application/pdf",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "gif": "image/gif",
+    "svg": "image/svg+xml",
+    "otf": "application/x-font-opentype",
+    "ttf": "application/x-font-ttf",
+    "woff": "application/font-woff",
+    "acsm": "application/vnd.adobe.adept+xml",
+    "m4a": "audio/mp4",
+    "aac": "audio/mp4",
+    "mp3": "audio/mpeg",
+    "ogg": "audio/ogg",
+    "oga": "audio/ogg",
+    "wav": "audio/x-wav",
+    "mp4": "video/mp4",
+    "m4v": "video/mp4",
+    "webm": "video/webm",
+    "ogv": "video/ogg"
+  },
+  "HYDRA_LINKS": [
+    "redirect.mytolino.com",
+    "redirect.prodref.mytolino.com"
+  ],
+  "UPLOAD": {
+    "MIN_FILE_SIZE": 4096,
+    "MAX_FILE_SIZE_MB": {
+      "pub": 250,
+      "cover": 1
+    },
+    "IS_VALID_MIMETYPE": {
+      "pub": {
+        "application/epub+zip": true,
+        "application/pdf": true
+      },
+      "cover": {
+        "image/jpeg": true,
+        "image/png": true
+      },
+      "folder": {}
+    },
+    "IS_VALID_EXTENSION": {
+      "pub": {
+        "epub": true,
+        "pdf": true
+      },
+      "cover": {
+        "jpeg": true,
+        "jpg": true,
+        "png": true
+      },
+      "folder": {}
+    }
+  }
+}
