@@ -74,12 +74,32 @@ class Dialog(QDialog):
             else self.gui.current_db
         )
 
+        from calibre.gui2 import Dispatcher
+
+        # gui.job_manager.run_job(Dispatcher(job_done), 'arbitrary',
+        #    args=('calibre_plugins.myplugin.worker', 'do_work',
+        #            ('arg1' 'arg2', 'arg3')),
+        #            description='Change the world')
+
+        def job_done(result):
+            print("done:", result)
+    
         for book_id in self.table.book_ids:
-            epub_container(
-                db.format_abspath(book_id, "EPUB"),
-                db.get_metadata(book_id),
-                book_id,
-                path,
-                self.config.prefs,
+            self.gui.job_manager.run_job(
+                Dispatcher(job_done),
+                "arbitrary",
+                args=(
+                    "calibre_plugins.better_export.epub.epubZip",
+                    "epub_container",
+                    (
+                        db.format_abspath(book_id, "EPUB"),
+                        book_id,
+                        path,
+                        {
+                            **self.config.prefs.defaults,
+                            **dict(self.config.prefs),
+                        }
+                    ),
+                ),
+                description="Converting and Exporting EPUBS",
             )
-        return 0

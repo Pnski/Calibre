@@ -6,18 +6,17 @@ from calibre.library.save_to_disk import config, get_path_components
 
 from pathlib import Path
 
-# from bs4 import BeautifulSoup
-
 from .epubimg import img_mani
 from .epubopf import reset_opf_metadata
 
 
 # this will unpack to local/temp and gives us a wrapper
-def epub_container(path, mi, book_id, export_path, prefs):
+def epub_container(path, book_id, export_path, prefs):
     # --------------------------------------------------
     # Extract EPUB
     # --------------------------------------------------
     container = calibre_container(path, tweak_mode=True)
+    mi = container.mi
 
     # --------------------------------------------------
     # process EPUB
@@ -33,7 +32,7 @@ def epub_container(path, mi, book_id, export_path, prefs):
     if prefs["mod_title_img"]:
         cover = get_cover_image(container)
         quality = prefs["mod_img_quality"]
-        while container.filesize(cover) > prefs["mod_title_img_max_size"] * 1024:
+        while cover and (container.filesize(cover) > prefs["mod_title_img_max_size"] * 1024):
             img = container.raw_data(cover, decode=False, normalize_to_nfc=True)
             r_img = img_maxsize(img, prefs["mod_title_img_max_size"])
             container.replace(cover, r_img)
