@@ -52,7 +52,7 @@ class JNovelsRemover(Tool):
 
         removed = []
         for file in container.manifest_id_map.values():
-            if file.lower().endswith('.js') or ('jnovels' or '1.png') in file.lower():
+            if file.lower().endswith('.js') or 'jnovels' in file.lower() or '1.png' in file.lower():
                 container.remove_item(file, remove_from_guide=True)
                 removed.append(file)
 
