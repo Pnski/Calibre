@@ -12,6 +12,11 @@ from calibre.gui2.tweak_book import current_container
 from calibre.ebooks.oeb.polish.replace import rationalize_folders, rename_files
 from calibre.ebooks.oeb.polish.pretty import pretty_all
 
+# CG scrapeprot -> vocal
+# footnotes
+# static text duplicator detector
+# duplicate detector
+
 class Remover(Tool):
     name = "Remover"
     allowed_in_toolbar = True
@@ -29,12 +34,10 @@ class Remover(Tool):
         if not self.ensure_book(_("You must first open a book.")):
             return
 
-        #self.boss.commit_all_editors_to_container()
         self.boss.add_savepoint("Before: Automatic Changes")
 
         container = self.current_container
 
-        # Remove embedded font files
         font_ext = ('.ttf', '.otf', '.woff', '.woff2')
         for file_path in list(container.manifest_id_map.values()):
             if file_path.lower().endswith(font_ext):
@@ -66,8 +69,10 @@ class Remover(Tool):
 
         from .stylesheet import CSS
 
+        cssFileName = "nyk.css"
+
         container.add_file(
-            name="nyk.css",
+            name=cssFileName,
             data=CSS.encode("utf-8")
         )
 
@@ -81,21 +86,68 @@ class Remover(Tool):
         for file in container.manifest_id_map.values():
             if file.lower().endswith(('.xhtml', '.html')):
                 raw = container.parsed(file)
-                strip_first_element(raw)
 
-                for p in raw.xpath('//*[local-name()="p"]'):
-                    if not ''.join(p.itertext()).strip():
-                        if p.xpath('.//*[local-name()="img" or local-name()="image"]'):
-                            unwrap_element(p)
-                        else:
-                            p.getparent().remove(p)
+                for c in raw.xpath('//comment()'):
+                    c.getparent().remove(c)
+
+                body = raw.xpath("//*[local-name()='body']")[0]
+                index = 0
+
+                while index < len(body):
+                    element = body[index]
+
+                    tag = element.tag.rsplit('}', 1)[-1].lower()
+
+                    if tag in ('div', 'span', 'svg'):
+                        unwrap_element(element)
                         continue
-                    attributes(p, raw, merged_css)
-                    etree.strip_tags(p, '{*}span')
-                    p.getparent().replace(p, replace_quotes(p))
+
+                    if tag == 'image':
+                        img = etree.Element('img')
+                        for key, attr in element.attrib.items():
+                            if key.lower().endswith(('href', 'src')):
+                                img.set('src',attr)
+
+                        parent = element.getparent()
+                        position = parent.index(element)
+                        parent.remove(element)
+                        parent.insert(position, img)
+
+                        index += 1
+                        continue
+
+                    # del button
+                    if tag == 'br':
+                        body.remove(element)
+                        continue
+
+                    if tag in ('img', 'a'):
+                        #print("element img skipping", element)
+                        index += 1
+                        continue
+
+                    if not ''.join(element.itertext()).strip():
+                        if element.xpath('.//*[local-name()="img" or local-name()="image"]'):
+                            unwrap_element(element)
+                            continue
+                        else:
+                            body.remove(element)
+                            continue
+
+                    attributes(element, raw, merged_css)
+                    etree.strip_tags(element, '{*}span')
+
+                    replacement = replace_quotes(element)
+                    body[index] = replacement
+                    index += 1
+
+                # First Element = h1 if not img
+                element = body[0]
+                tag = element.tag.rsplit('}', 1)[-1].lower()
+                if tag not in ('img', 'a'):
+                    element.tag = 'h1'
 
                 container.dirty(file)
-
 
         for file in container.manifest_id_map.values():
             if file.lower().endswith(('.xhtml', '.html')):
@@ -103,12 +155,12 @@ class Remover(Tool):
                 head = raw.xpath('//*[local-name()="head"]')[0]
                 etree.strip_tags(head, '{*}link')
                 style = raw.makeelement('link')
-                style.set('href','../styles/nyk.css')
+                style.set('href',f'../styles/{cssFileName}')
                 style.set('rel','stylesheet')
                 style.set('type','text/css')
                 head.append(style)
 
-        self.boss.show_current_diff()
+        #self.boss.show_current_diff()
         pretty_all(container)
         self.boss.apply_container_update_to_gui(mark_as_modified=True)
 
@@ -118,6 +170,9 @@ class Remover(Tool):
             error_dialog(self.gui, _("No book open"), msg, show=True)
             return False
         return True
+
+def local_name(element):
+    return element.tag.rsplit('}', 1)[-1].lower()
 
 
 def attributes(element, raw, css):
@@ -212,7 +267,8 @@ TAG_OR_QUOTE_REGEX = re.compile(rf'(<[^>]+>)|({combined_quotes})', re.DOTALL)
 
 
 def replace_quotes(p):
-    text = etree.tostring(p, encoding='unicode')
+    #new stuff from chatgpt
+    text = etree.tostring(p, encoding='unicode', with_tail=False)
 
     def replace_func(match):
         # If Group 1 matched, it's an HTML tag (e.g. <p xmlns="...">) -> keep as-is
@@ -231,24 +287,6 @@ def replace_quotes(p):
     except etree.XMLSyntaxError:
         print(text)
         raise
-
-def local_name(element):
-    return element.tag.rsplit("}", 1)[-1].lower()
-
-def strip_first_element(raw):
-    ALLOWED_TAGS = {"p", "h1", "h2", "svg", "img"}
-    while True:
-        element = raw.xpath("//*[local-name()='body']/*")[0]
-
-        # we asume a body is inside the file
-        # we asume a paragraph is inside the file
-        if element is not None or not raw.xpath('//*[local-name()="p"]'):
-            return
-
-        if local_name(element) in ALLOWED_TAGS:
-            return
-
-        unwrap_element(element)
 
 def wrap_contents(element, tree, tag):
     wrapper = tree.makeelement(tag)
