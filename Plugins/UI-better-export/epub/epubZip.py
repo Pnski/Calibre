@@ -57,7 +57,7 @@ def epub_container(path, book_id, export_path, prefs):
 
     base_path = Path(export_path).joinpath(*components)
     epub_path = base_path.with_suffix(".epub")
-
+    print(components,base_path,epub_path)
     epub_path.parent.mkdir(parents=True, exist_ok=True)
 
     container.commit(str(epub_path))

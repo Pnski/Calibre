@@ -70,6 +70,13 @@ class JNovelsRemover(Tool):
         rename_map = rationalize_folders(container, TYPE_MAP)
         rename_files(container, rename_map)
 
+        for file in container.manifest_items_of_type(['text/css']):
+            parsed = container.parsed(file)
+            for index, rule in enumerate(parsed.cssRules):
+                if isinstance(rule, css_parser.css.CSSComment):
+                    parsed.deleteRule(index)
+                    container.dirty(file)
+
         table = toc.get_x_toc(container, toc.find_existing_nav_toc, toc.parse_nav, verify_destinations=False)
         for node in list(table.iterdescendants()):
             if "jnovels" in node.dest.lower():

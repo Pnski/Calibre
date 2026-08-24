@@ -5,7 +5,7 @@ class rndbseries(InterfaceActionBase):
     name = "Better Export"
     description = "Exporting epub's with new settings"
     author = "Nyk"
-    version = (0, 1, 1)
+    version = (0, 1, 2)
     minimum_calibre_version = (9, 0, 0)
 
     actual_plugin       = __name__ + '.main:InterfacePlugin'
