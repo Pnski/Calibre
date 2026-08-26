@@ -12,13 +12,28 @@ from calibre.ebooks.oeb.polish.pretty import pretty_all
 
 from .body import do_body
 
-# CG scrapeprot -> vocal
-# footnotes
+
+import re
+CLASS_RE = re.compile(r"\.([_a-zA-Z][\w-]*)")
+
+css_properties = {
+    "hidden": ("overflow", "hidden"),
+    "center": ("text-align", "center"),
+    "right": ("text-align", "right"),
+    "i": ("font-style", "italic"),
+    "b": ("font-weight", "bold"),
+    "u": ("text-decoration", "underline"),
+    "s": ("text-decoration", "line-through"),
+}
+
+
+# CG scrapeprot -> vocal ##check
+# footnotes <-
 # static text duplicator detector
 # duplicate detector
 
-class Remover(Tool):
-    name = "Remover"
+class epubCleaningTool(Tool):
+    name = "Cleaning Tool"
     allowed_in_toolbar = True
     allowed_in_menu = True
     default_shortcut = ()
@@ -81,19 +96,36 @@ class Remover(Tool):
 
         self.boss.add_savepoint("SAVEPOINT FOLDER")
         container = self.current_container
-        
+
+        from css_parser.css import CSSRule
+
+        cssClasses = {
+            name: set()
+            for name in css_properties
+        }
+
+        for rule in merged_css.cssRules.rulesOfType(CSSRule.STYLE_RULE):
+
+            for category, (property_name, expected_value) in css_properties.items():
+                value = rule.style.getPropertyValue(property_name)
+
+                if value and value.strip().lower() == expected_value:
+                    cssClasses[category].update(CLASS_RE.findall(rule.selectorText))
+
+        cssClasses = {
+            category: list(classes)
+            for category, classes in cssClasses.items()
+        }
+
+        print(cssClasses)
+
         # Process XHTML files
         for file in container.manifest_id_map.values():
             if file.lower().endswith(('.xhtml', '.html')):
                 raw = container.parsed(file)
 
-                do_body(raw, merged_css)
+                print(do_body(raw, cssClasses))
 
-                container.dirty(file)
-
-        for file in container.manifest_id_map.values():
-            if file.lower().endswith(('.xhtml', '.html')):
-                raw = container.parsed(file)
                 head = raw.xpath('//*[local-name()="head"]')[0]
                 etree.strip_tags(head, '{*}link')
                 style = raw.makeelement('link')
@@ -101,6 +133,8 @@ class Remover(Tool):
                 style.set('rel','stylesheet')
                 style.set('type','text/css')
                 head.append(style)
+
+                container.dirty(file)
 
         #self.boss.show_current_diff()
         pretty_all(container)
