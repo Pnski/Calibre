@@ -38,29 +38,39 @@ def do_body(raw, cssClasses):
 
     # refractor images to img
     for image in raw.xpath("//*[local-name()='image']"):
-        for k, v in image.attrib.items():
-            if k.lower().endswith(('href', 'src')):
-                image.attrib.clear()
-                image.set('src', v)
-                image.tag = 'img'
-                counter["images"] += 1
-                break
-        if image.getparent().tag.endswith('svg'):
-            helper.unwrap(image.getparent())
+        image.tag = 'img'
+        src = image.xpath("./@*[local-name()='href' or local-name()='src']")[0]
+        image.attrib.clear()
+        image.set('src', src)
+        counter["images"] += 1
+
+    for svg in raw.xpath("//*[local-name()='svg']"):
+        helper.unwrap(svg)
+        counter["deleted"] += 1
 
     # unwrap child of span and div, that have no text
     for divspan in raw.xpath("//*[local-name()='div' or local-name()='span'][* and not(normalize-space(text()))]"):
+        if divspan.get('id', None):
+            divspan.getparent().set('id', divspan.get('id', None))
         helper.unwrap(divspan)
+        counter["deleted"] += 1
 
     for divspan in raw.xpath("//*[local-name()='body']/*[local-name()='div' or local-name()='span'][*]"):
         divspan.tag = 'p'
-        for child in divspan:
-            if child.tag.lower().endswith('p'):
-                child.tag = 'span'
+        for child in divspan.xpath(".//*[local-name()='p']"):
+            child.tag = 'span'
 
     # remove everything without text
+    #text = text.replace('\u200b', '')  # ZERO WIDTH SPACE
+    #text = text.replace('\u200c', '')  # ZERO WIDTH NON-JOINER
+    #text = text.replace('\u200d', '')  # ZERO WIDTH JOINER
+    #text = text.replace('\ufeff', '')  # ZERO WIDTH NO-BREAK SPACE / BOM
+    #"translate(., '\u00A0', ' ')"
+
     for element in raw.xpath(
-        "//*[not(normalize-space(.)) and "
+        f"//*[not(normalize-space("
+        f"translate(., '\u00A0\u200B\u200C\u200D\uFEFF', ' ')"
+        f")) and "
         "not(self::*[local-name()='img' or local-name()='hr' or local-name()='link']) and "
         "not(.//*[local-name()='img' or local-name()='hr' or local-name()='link'])]"
     ):
@@ -96,8 +106,36 @@ def do_body(raw, cssClasses):
         helper.wrap(linethrough, raw, "s")
 
     # unwrapping all preprocessed stuff
+    # span id not taken
     for span in raw.xpath("//*[local-name()='span' and not(parent::*[local-name()='body'])]"):
+        if span.get('id', None):
+            span.getparent().set('id', span.get('id', None))
         helper.unwrap(span)
+        counter["deleted"] += 1
+
+    class_conditions = " or ".join(
+        f"contains(@class, '{css_class}')"
+        for css_class in cssClasses['center']
+    )
+
+    center_xpath = (
+        f"//*[contains(@style, 'center') or {class_conditions}]"
+    )
+
+    for center in raw.xpath(center_xpath):
+        print(center)
+
+    class_conditions = " or ".join(
+        f"contains(@class, '{css_class}')"
+        for css_class in cssClasses['center']
+    )
+
+    center_xpath = (
+        f"//*[contains(@style, 'center') or {class_conditions}]"
+    )
+
+    for center in raw.xpath(center_xpath):
+        print(center)
 
     # removing attributes
     for element in raw.xpath("//*[@*]"):

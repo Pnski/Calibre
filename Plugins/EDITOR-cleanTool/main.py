@@ -128,10 +128,7 @@ class epubCleaningTool(Tool):
 
                 head = raw.xpath('//*[local-name()="head"]')[0]
                 etree.strip_tags(head, '{*}link')
-                style = raw.makeelement('link')
-                style.set('href',f'../Styles/{cssFileName}')
-                style.set('rel','stylesheet')
-                style.set('type','text/css')
+                style = raw.makeelement('link', attrib={'href': f'../Styles/{cssFileName}', 'rel': 'stylesheet', 'type': 'text/css'})
                 head.append(style)
 
                 container.dirty(file)
