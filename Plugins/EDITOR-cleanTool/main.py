@@ -26,9 +26,12 @@ css_properties = {
     "s": ("text-decoration", "line-through"),
 }
 
-
-# CG scrapeprot -> vocal ##check
+# img 1x1
+# content.opf
+## pageid
+## sources
 # footnotes <-
+# whitespaces between translator notes
 # static text duplicator detector
 # duplicate detector
 

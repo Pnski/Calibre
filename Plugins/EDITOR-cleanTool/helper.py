@@ -73,3 +73,30 @@ def xpath_for_style_or_classes(style_text, class_names):
             )
 
     return "//*[" + " or ".join(conditions) + "]"
+
+def alignment(raw, cssClasses, alignment):
+    conditions = [
+        f"contains(@style, '{alignment}')"
+    ]
+
+    conditions.extend(
+        f"contains(@class, '{css_class}')"
+        for css_class in cssClasses.get(alignment, [])
+    )
+
+    xpath = f"//*[{ ' or '.join(conditions) }]"
+
+    for element in raw.xpath(xpath):
+        keep = {
+            'id': element.get('id'),
+            'href': element.get('href'),
+            'src': element.get('src'),
+        }
+
+        element.attrib.clear()
+
+        element.set('class', alignment)
+
+        for key, value in keep.items():
+            if value is not None:
+                element.set(key, value)

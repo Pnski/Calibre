@@ -37,6 +37,9 @@ body {
 
   hyphens: auto;
   hyphenate-character: auto;
+
+  /* vertical align */
+  vertical-align: middle;
 }
 
 div { /*eliminate*/
