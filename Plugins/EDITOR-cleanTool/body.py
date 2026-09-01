@@ -59,7 +59,7 @@ def do_body(raw, cssClasses):
         helper.unwrap(divspan)
         counter["deleted"] += 1
 
-    for divspan in raw.xpath("//*[local-name()='body']/*[local-name()='div' or local-name()='span'][*]"):
+    for divspan in raw.xpath("//*[local-name()='body']/*[local-name()='div' or local-name()='span']"):
         divspan.tag = 'p'
         for child in divspan.xpath(".//*[local-name()='p']"):
             child.tag = 'span'
@@ -116,7 +116,7 @@ def do_body(raw, cssClasses):
     helper.alignment(raw, cssClasses, 'right')
 
     # removing attributes
-    for element in raw.xpath("//*[@* and not(contains(@class, 'center')) and not(contains(@class, 'right'))]"):
+    for element in raw.xpath("//*[@* and not(@class='center') and not(@class='right')]"):
         for attr in list(element.attrib):
             if attr.lower() not in ("href", "id", "src"):
                 del element.attrib[attr]

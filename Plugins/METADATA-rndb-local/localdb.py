@@ -325,10 +325,10 @@ def get_mi_by_rndbid(book_id: int, language: str):
             WHERE
                 rb.book_id = ?
                 AND rl.format = 'digital'
-                AND lang IN (?, 'ja')
+                AND rl.lang IN (?, 'ja')
                 AND rp.publisher_type = 'publisher'
             ORDER BY
-                CASE lang WHEN ? THEN 0 ELSE 1 END
+                CASE rl.lang WHEN ? THEN 0 ELSE 1 END
             LIMIT 1
             """,
             (

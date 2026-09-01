@@ -26,15 +26,6 @@ css_properties = {
     "s": ("text-decoration", "line-through"),
 }
 
-# img 1x1
-# content.opf
-## pageid
-## sources
-# footnotes <-
-# whitespaces between translator notes
-# static text duplicator detector
-# duplicate detector
-
 class epubCleaningTool(Tool):
     name = "Cleaning Tool"
     allowed_in_toolbar = True
@@ -57,9 +48,9 @@ class epubCleaningTool(Tool):
         container = self.current_container
 
         font_ext = ('.ttf', '.otf', '.woff', '.woff2')
-        for file_path in list(container.manifest_id_map.values()):
-            if file_path.lower().endswith(font_ext):
-                container.remove_item(file_path, remove_from_guide=True)
+        for iPath in list(container.name_path_map.keys()):
+            if iPath.lower().endswith(font_ext):
+                container.remove_item(iPath, remove_from_guide=True)
 
         TYPE_MAP = {
             "text": "OEBPS/Text/",
@@ -130,7 +121,7 @@ class epubCleaningTool(Tool):
                 print(do_body(raw, cssClasses))
 
                 head = raw.xpath('//*[local-name()="head"]')[0]
-                etree.strip_tags(head, '{*}link')
+                etree.strip_elements(head, '{*}link')
                 style = raw.makeelement('link', attrib={'href': f'../Styles/{cssFileName}', 'rel': 'stylesheet', 'type': 'text/css'})
                 head.append(style)
 
