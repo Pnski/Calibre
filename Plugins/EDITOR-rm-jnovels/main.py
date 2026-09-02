@@ -5,7 +5,7 @@ from calibre.ebooks.oeb.polish.toc import get_x_toc, find_existing_ncx_toc, pars
 from calibre.ebooks.oeb.polish.replace import rationalize_folders, rename_files
 from calibre.ebooks.oeb.polish.pretty import pretty_all
 
-from qt.core import QAction
+from qt.core import QAction, QMessageBox
 
 from . import helper
 
@@ -34,6 +34,12 @@ class JNovelsRemover(Tool):
 
         container = self.current_container  # The book being edited as a container object
 
+        removedMeta = []
+        for doDel in container.opf.xpath("//*[local-name()='meta' and (contains(@name,'JNC') or contains(@name,'Sigil'))]"):
+            removedMeta.append(doDel.attrib)
+            doDel.getparent().remove(doDel)
+            container.dirty(container.opf_name)
+
         TYPE_MAP = {
             'text': 'OEBPS/text/',
             'style':'OEBPS/styles/',
@@ -52,53 +58,73 @@ class JNovelsRemover(Tool):
 
         container = self.current_container
 
-        removed = []
+        removedFiles = []
         #name_path_map reveals ALL files in the epub
         for iPath in list(container.name_path_map.keys()):
             if iPath.lower().endswith('js') or any(term in iPath.lower() for term in ("jnovels", "1.png", "rights.xml", "calibre")):
                 container.remove_item(iPath, remove_from_guide=True)
-                removed.append(iPath)
+                removedFiles.append(iPath)
 
-
+        removedComments = 0
         for file in container.manifest_items_of_type(['text/css']):
             parsed = container.parsed(file)
             for index, rule in enumerate(parsed):
                 if rule.type == 1001: #comment
                     parsed.deleteRule(index)
                     container.dirty(file) #flag
+                    removedComments += 1
 
+        removedToc = 0
         #remove jnovels from all EPUB-TOC
         for tocTable in [get_x_toc(container, find_existing_ncx_toc, parse_ncx, verify_destinations=False), get_x_toc(container, find_existing_nav_toc, parse_nav, verify_destinations=False)]:
             for tocIndex in list(tocTable.iterdescendants()):
                 if "jnovels" in tocIndex.dest.lower():
                     remove_names_from_toc(container, [tocIndex.dest])
+                    removedToc += 1
 
+        removedKobo = 0
         for file in container.manifest_id_map.values():
             if file.lower().endswith('html'):
                 raw = container.parsed(file)
 
                 for style in raw.xpath("//*[local-name()='span' and @class='koboSpan']"):
                     helper.unwrap(style)
+                    removedKobo += 1
 
                 for doDel in raw.xpath("//*[local-name()='style' or local-name()='script'] | //comment()"):
                     doDel.getparent().remove(doDel)
+                    removedKobo += 1
 
                 container.dirty(file)
 
+        imgData = []
         # PIL seem to be the wrong choice since it removes more infos?
-        for iPath, ePath in list(container.name_path_map.items()):
-            if ePath.lower().endswith(('jpg', 'jpeg')):
+        for iPath in container.name_path_map.keys():
+            if iPath.lower().endswith(('jpg', 'jpeg')):
                 img = container.parsed(iPath)#binary
 
                 #reversefind
                 end_marker = img.rfind(b"\xff\xd9")#binary ffd9 is jpg marker
 
                 if end_marker == -1 or end_marker == len(img)-2: #errorhandling
-                    print(f"No Extra Info ({end_marker+2}/{len(img)}): {ePath}")
+                    print(f"No Extra Info ({end_marker+2}/{len(img)}): {iPath}")
                 else:
-                    print(img[end_marker + 2:])
+                    imgData.append(img[end_marker + 2:].hex())
                     img = img[:end_marker + 2]
-                    container.dirty(ePath)
+                    container.dirty(iPath)
+
+        QMessageBox.information(
+            None,
+            "Info",
+            f"""
+            Files removed: {removedFiles}
+            Meta removed: {removedMeta}
+            RemovedCss: {removedComments}
+            TOC removed: {removedToc}
+            Kobo entrys removed: {removedKobo}
+            Image data cleaned: {imgData}
+            """
+        )
 
         pretty_all(container)
 
