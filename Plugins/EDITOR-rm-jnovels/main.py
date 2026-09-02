@@ -34,12 +34,6 @@ class JNovelsRemover(Tool):
 
         container = self.current_container  # The book being edited as a container object
 
-        removedMeta = []
-        for doDel in container.opf.xpath("//*[local-name()='meta' and (contains(@name,'JNC') or contains(@name,'Sigil'))]"):
-            removedMeta.append(doDel.attrib)
-            doDel.getparent().remove(doDel)
-            container.dirty(container.opf_name)
-
         TYPE_MAP = {
             'text': 'OEBPS/text/',
             'style':'OEBPS/styles/',
@@ -57,6 +51,12 @@ class JNovelsRemover(Tool):
         self.boss.add_savepoint('After: Rationalize Folders')
 
         container = self.current_container
+
+        removedMeta = []
+        for doDel in container.opf.xpath("//*[local-name()='meta' and (contains(@name,'JNC') or contains(@name,'Sigil'))]"):
+            removedMeta.append(doDel.attrib)
+            doDel.getparent().remove(doDel)
+            container.dirty(container.opf_name)
 
         removedFiles = []
         #name_path_map reveals ALL files in the epub
@@ -110,8 +110,8 @@ class JNovelsRemover(Tool):
                     print(f"No Extra Info ({end_marker+2}/{len(img)}): {iPath}")
                 else:
                     imgData.append(img[end_marker + 2:].hex())
-                    img = img[:end_marker + 2]
-                    container.dirty(iPath)
+                    container.replace(iPath, img[:end_marker + 2])
+                    #container.dirty(iPath)
 
         QMessageBox.information(
             None,
