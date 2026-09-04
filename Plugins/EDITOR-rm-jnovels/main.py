@@ -9,6 +9,8 @@ from qt.core import QAction, QMessageBox
 
 from . import helper
 
+import base64
+
 class JNovelsRemover(Tool):
     name = "JNovels Remover"
     allowed_in_toolbar = True
@@ -112,17 +114,55 @@ class JNovelsRemover(Tool):
                     imgData.append(img[end_marker + 2:].hex())
                     container.replace(iPath, img[:end_marker + 2])
                     #container.dirty(iPath)
+            elif iPath.lower().endswith('png'):
+                img = container.parsed(iPath)
 
+                assert img[:8] == b'\x89PNG\r\n\x1a\n', 'Png is not a PNG!'
+
+                imgLength = len(img)
+                pos = 8
+                png = bytearray(b'\x89PNG\r\n\x1a\n')
+
+                while pos +8 < len(img):
+                    #chunk_len = int.from_bytes(img[pos:pos+4], 'big')
+                    chunk_type = img[pos+4:pos+8]
+                    chunk_end = pos + 8 + int.from_bytes(img[pos:pos+4], 'big') + 4  # +4 crc
+
+                    if chunk_end > len(img):
+                        break
+
+                    chunk = img[pos:chunk_end]
+                    if chunk_type in {b'IHDR', b'PLTE', b'tRNS', b'IDAT', b'IEND'}:
+                        #print('keep',chunk)
+                        png.extend(chunk)
+                    else:
+                        data = chunk.decode("utf-8", errors="replace")
+                        print(data)
+                        imgData.append(data)
+                    pos = chunk_end
+                    if chunk_type == b'IEND':
+                        break
+                
+                container.replace(iPath, png)
         QMessageBox.information(
             None,
             "Info",
             f"""
-            Files removed: {removedFiles}
-            Meta removed: {removedMeta}
-            RemovedCss: {removedComments}
-            TOC removed: {removedToc}
-            Kobo entrys removed: {removedKobo}
-            Image data cleaned: {imgData}
+            <table>
+                <tr>
+                    <td>Files removed:</td><td>{"\n".join(removedFiles)}</td>
+                </tr><tr>
+                    <td>Meta removed:</td><td>{removedMeta}</td>
+                </tr><tr>
+                    <td>RemovedCss:</td><td>{removedComments}</td>
+                </tr><tr>
+                    <td>TOC removed:</td><td>{removedToc}</td>
+                </tr><tr>
+                    <td>Kobo entrys removed:</td><td>{removedKobo}</td>
+                </tr><tr>
+                    <td>Image data cleaned:</td><td>{"<br>".join(list(dict.fromkeys(imgData)))}</td>
+                </tr>
+            </table>
             """
         )
 

@@ -12,6 +12,7 @@ QUOTE_PAIRS = {
     '‹': '›',
     '「': '」',
     '『': '』',
+    '《': '》',
 }
 
 pair_patterns = [f"{re.escape(o)}([^<>]*?){re.escape(c)}" for o, c in QUOTE_PAIRS.items()]

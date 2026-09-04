@@ -2,7 +2,7 @@
 
 from lxml import etree
 
-from qt.core import QAction
+from qt.core import QAction, QMessageBox
 
 from calibre.gui2 import error_dialog
 from calibre.gui2.tweak_book.plugin import Tool
@@ -111,14 +111,17 @@ class epubCleaningTool(Tool):
             for category, classes in cssClasses.items()
         }
 
-        print(cssClasses)
+        #print(cssClasses)
+
+        from collections import Counter
+        itemsCounted = Counter()
 
         # Process XHTML files
         for file in container.manifest_id_map.values():
             if file.lower().endswith(('.xhtml', '.html')):
                 raw = container.parsed(file)
 
-                print(do_body(raw, cssClasses))
+                itemsCounted.update(do_body(raw, cssClasses))
 
                 head = raw.xpath('//*[local-name()="head"]')[0]
                 etree.strip_elements(head, '{*}link')
@@ -126,6 +129,25 @@ class epubCleaningTool(Tool):
                 head.append(style)
 
                 container.dirty(file)
+
+        # processing the opf
+        for doDel in container.opf.xpath("//*[local-name()='source']"):
+            doDel.getparent().remove(doDel)
+            container.dirty(container.opf_name)
+            itemsCounted.update({'metadata':1})
+
+
+        rows = "".join(
+            f"<tr><td>{key.capitalize()}:</td>"
+            f"<td style='text-align: right'>{value}</td></tr>"
+            for key, value in itemsCounted.items()
+        )
+
+        QMessageBox.information(
+            None,
+            "Info",
+            f"<table>{rows}</table>",
+        )
 
         #self.boss.show_current_diff()
         pretty_all(container)
