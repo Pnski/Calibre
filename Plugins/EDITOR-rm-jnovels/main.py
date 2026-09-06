@@ -10,6 +10,7 @@ from qt.core import QAction, QMessageBox
 from . import helper
 
 import base64
+from html import escape
 
 class JNovelsRemover(Tool):
     name = "JNovels Remover"
@@ -160,7 +161,7 @@ class JNovelsRemover(Tool):
                 </tr><tr>
                     <td>Kobo entrys removed:</td><td>{removedKobo}</td>
                 </tr><tr>
-                    <td>Image data cleaned:</td><td>{"<br>".join(list(dict.fromkeys(imgData)))}</td>
+                    <td>Image data cleaned:</td><td style="white-space: pre-wrap; overflow-wrap: anywhere;">{escape("".join(list(dict.fromkeys(imgData))))}</td>
                 </tr>
             </table>
             """
