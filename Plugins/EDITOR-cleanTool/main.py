@@ -98,20 +98,20 @@ class epubCleaningTool(Tool):
             for name in css_properties
         }
 
-        for rule in merged_css.cssRules.rulesOfType(CSSRule.STYLE_RULE):
+        if merged_css is not None:
+            for rule in merged_css.cssRules.rulesOfType(CSSRule.STYLE_RULE):
+                for category, (property_name, expected_value) in css_properties.items():
+                    value = rule.style.getPropertyValue(property_name)
 
-            for category, (property_name, expected_value) in css_properties.items():
-                value = rule.style.getPropertyValue(property_name)
-
-                if value and value.strip().lower() == expected_value:
-                    cssClasses[category].update(CLASS_RE.findall(rule.selectorText))
+                    if value and value.strip().lower() == expected_value:
+                        cssClasses[category].update(
+                            CLASS_RE.findall(rule.selectorText)
+                        )
 
         cssClasses = {
             category: list(classes)
             for category, classes in cssClasses.items()
         }
-
-        #print(cssClasses)
 
         from collections import Counter
         itemsCounted = Counter()
